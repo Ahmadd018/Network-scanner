@@ -1,5 +1,5 @@
-import scapy.all as scapy
 import nmap
+import scapy.all as scapy
 
 def discover_devices(network):
     arp_request = scapy.ARP(pdst=network)
@@ -17,10 +17,11 @@ def discover_devices(network):
         devices.append(device_info)
     return devices
 
+
 def scan_ports(ip):
     nm = nmap.PortScanner()
     try:
-        nm.scan(ip, '1-1024', timeout=5)  # Scan ports 1 to 1024 with a timeout of 5 seconds
+        nm.scan(ip, '1-1024', timeout=120)  # Set timeout to 10 minutes (600 seconds)
     except nmap.nmap.PortScannerError as e:
         print(f"Error occurred while scanning ports on {ip}: {e}")
         return []
@@ -31,7 +32,12 @@ def scan_ports(ip):
         for port in lport:
             if nm[ip][proto][port]['state'] == 'open':
                 open_ports.append(port)
-    return open_ports
+
+    if open_ports:
+        return open_ports
+    else:
+        print(f"No open ports found on {ip}. Firewall is likely active.")
+        return []
 
 def main():
     network = input("Enter the network to scan (e.g., 192.168.1.0/24): ")
