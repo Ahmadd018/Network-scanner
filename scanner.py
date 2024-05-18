@@ -1,23 +1,30 @@
 import scapy.all as scapy
 import nmap
+
 def discover_devices(network):
     arp_request = scapy.ARP(pdst=network)
     broadcast = scapy.Ether(dst="ff:ff:ff:ff:ff:ff")
     arp_request_broadcast = broadcast / arp_request
-    answered_list = scapy.srp(arp_request_broadcast, timeout=1, verbose=False)[0]
+    try:
+        answered_list = scapy.srp(arp_request_broadcast, timeout=1, verbose=False)[0]
+    except scapy.scapy.all.TimeoutError:
+        print("ARP scan timed out. No response received from devices.")
+        return []
 
     devices = []
     for element in answered_list:
         device_info = {'ip': element[1].psrc, 'mac': element[1].hwsrc}
         devices.append(device_info)
-    
     return devices
-
-
 
 def scan_ports(ip):
     nm = nmap.PortScanner()
-    nm.scan(ip, '1-1024')  # Scan ports 1 to 1024
+    try:
+        nm.scan(ip, '1-1024', timeout=5)  # Scan ports 1 to 1024 with a timeout of 5 seconds
+    except nmap.nmap.PortScannerError as e:
+        print(f"Error occurred while scanning ports on {ip}: {e}")
+        return []
+
     open_ports = []
     for proto in nm[ip].all_protocols():
         lport = nm[ip][proto].keys()
